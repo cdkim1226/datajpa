@@ -4,6 +4,10 @@ import static org.assertj.core.api.Assertions.*;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Slice;
+import org.springframework.data.domain.Sort;
 import org.springframework.test.annotation.Rollback;
 import org.springframework.transaction.annotation.Transactional;
 import study.datajpa.dto.MemberDto;
@@ -144,5 +148,36 @@ public class MemberRepositoryTest {
 
         Optional<Member> aaa = memberRepository.findOptionalByUsername("AAA");
         System.out.println("aaa = " + aaa.get());
+    }
+
+    @Test
+    public void paging() {
+        memberRepository.save(new Member("member1",10));
+        memberRepository.save(new Member("member2",10));
+        memberRepository.save(new Member("member3",10));
+        memberRepository.save(new Member("member4",10));
+        memberRepository.save(new Member("member5",10));
+
+        int age = 10;
+        PageRequest pageRequest = PageRequest.of(0, 3, Sort.by(Sort.Direction.DESC, "username"));
+
+        // 슬라이스(페이지 안넘어가고 아래 더보기 형식)
+//        Slice<Member> page = memberRepository.findByAge(age, pageRequest);
+
+        // 페이징
+        Page<Member> page = memberRepository.findByAge(age, pageRequest);
+
+        Page<MemberDto> map = page.map(member -> new MemberDto(member.getId(), member.getUsername(), null));
+
+        List<Member> content = page.getContent();
+        // 슬라이스에서는 페이지 카운팅이 필요 없음
+        long totalElements = page.getTotalElements();
+
+        assertThat(content.size()).isEqualTo(3);
+        assertThat(page.getTotalElements()).isEqualTo(5);
+        assertThat(page.getNumber()).isEqualTo(0);
+        assertThat(page.getTotalPages()).isEqualTo(2);
+        assertThat(page.isFirst()).isTrue();
+        assertThat(page.hasNext()).isTrue();
     }
 }
